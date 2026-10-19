@@ -24,6 +24,10 @@ First public release: a recoverable session trash for DeepSeek Harness Desktop.
 - `POST /api/session-trash` on the Host's authenticated fetch channel, answering
   with stable failure codes (`live`, `child-running`, `has-children`,
   `cross-volume`, `busy`, `already-exists`, `corrupt`, `unavailable`, …).
+- A **Disclaimer** section in both READMEs and a notice in `LICENSE`: this plugin
+  deletes data, is provided as is under the MIT license, and is not affiliated
+  with DeepSeek. The author is not liable for lost sessions or unreconstructable
+  work.
 
 ### Changed during the release
 

@@ -24,6 +24,7 @@ and no filesystem path ever crossing the wire.
 - [Scope](#scope)
 - [Verification](#verification)
 - [Further exploration](#further-exploration)
+- [Disclaimer](#disclaimer)
 - [Known limitations](#known-limitations)
 
 -----
@@ -169,6 +170,38 @@ looking like a bare browser button.
   reads and moves.
 - `@deepseek-ai/dsh-workspace` — the registry whose `sessionIds` sets deletion
   updates.
+
+<a id="disclaimer"></a>
+## Disclaimer
+
+**This plugin deletes data. Read this before you install it.**
+
+- **You are responsible for what you delete.** The plugin moves session logs out
+  of `sessionsRoot` and can permanently remove them on request. A deletion you
+  confirm is a change to your own files; the author is not responsible for lost
+  sessions, lost history, or work that cannot be reconstructed. Back up anything
+  you cannot afford to lose before trying it for the first time.
+- **Provided as is, without warranty.** The software is offered under the MIT
+  license, which supplies it "as is", without warranty of any kind, express or
+  implied, and disclaims all liability for damages arising from its use. See
+  [LICENSE](LICENSE) — that text governs.
+- **Not affiliated with DeepSeek.** This is an independent, third-party plugin.
+  It is not endorsed by, sponsored by, or supported by DeepSeek. DeepSeek Harness
+  and its marks belong to their respective owners; names appear here only to
+  describe what the plugin works with.
+- **It depends on internals that can change.** The plugin reads the shipped JSONL
+  backend's on-disk layout and the host's own menu primitives by copying their
+  styles. A Harness update may change either, and the plugin may then stop
+  working correctly. Verify against a session you can afford to lose before
+  relying on it for anything important.
+- **A move can be refused or fail part-way.** The plugin reports `cross-volume`,
+  `busy`, `live`, `has-children` and the other codes rather than forcing a
+  deletion, and it rolls back a partial carry. A refusal is the safe outcome, not
+  a defect — do not work around it by editing files by hand.
+- **Only a person can delete.** No agent tool is registered. If a session was
+  deleted, a person clicked the button, and the responsibility is theirs.
+- **No support commitment.** Issues and pull requests are welcome, but there is
+  no promise of response time, fixes, or continued maintenance.
 
 <a id="known-limitations"></a>
 ## Known limitations

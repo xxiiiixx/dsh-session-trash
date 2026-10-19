@@ -19,3 +19,13 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+--------------------------------------------------------------------------------
+NOTICE ON DESTRUCTIVE OPERATIONS
+
+This software deletes session data. It moves session logs out of their storage
+root on request and can permanently remove them. You are solely responsible for
+the sessions you choose to delete and for keeping backups of anything you need.
+The author is not liable for lost sessions, lost history, or work that cannot be
+reconstructed. See the Disclaimer section of README.md for the full statement.
+
