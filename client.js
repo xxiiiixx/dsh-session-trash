@@ -303,10 +303,11 @@ window.__ModuleLoader__.load({
 .st-button:disabled { cursor: not-allowed; opacity: .4; }
 .st-button[data-variant="outline"] { border: .5px solid var(--dsw-alias-border-l3); background: transparent; }
 .st-button[data-variant="outline"]:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); }
+/* The host's destructive confirm (ui-workspace's delete-action class) is an
+   outline button whose TEXT turns red — not a red-bordered one. Match that. */
+.st-button[data-destructive="true"]:not(:disabled) { color: var(--dsw-alias-state-error-primary); }
 .st-button[data-variant="primary"] { background: var(--dsw-alias-button-primary-fill); color: var(--dsw-alias-label-primary-foreground); }
 .st-button[data-variant="primary"]:hover:not(:disabled) { background: var(--dsw-alias-button-primary-hover); }
-.st-button[data-variant="danger"] { border: .5px solid var(--dsw-alias-state-error-primary); color: var(--dsw-alias-state-error-primary); background: transparent; }
-.st-button[data-variant="danger"]:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover-danger); }
 
 .st-backdrop { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; background: color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent); backdrop-filter: blur(2px); pointer-events: auto; z-index: 60; }
 .st-dialog { width: min(520px, 100%); max-height: min(640px, 100%); display: flex; flex-direction: column; gap: 14px; padding: 20px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 14px; background: var(--dsw-alias-bg-overlay); box-shadow: 0 18px 48px rgba(0,0,0,.28); overflow: auto; }
@@ -593,7 +594,8 @@ window.__ModuleLoader__.load({
                       {
                         type: 'button',
                         className: 'st-button',
-                        'data-variant': 'danger',
+                        'data-variant': 'outline',
+                        'data-destructive': 'true',
                         disabled: !canDelete,
                         onClick: confirm,
                         ref: confirmRef,
@@ -679,7 +681,8 @@ window.__ModuleLoader__.load({
             {
               type: 'button',
               className: 'st-button',
-              'data-variant': 'danger',
+              'data-variant': 'outline',
+              'data-destructive': 'true',
               disabled: busy !== null,
               onClick: purge,
             },
@@ -757,7 +760,8 @@ window.__ModuleLoader__.load({
                 {
                   type: 'button',
                   className: 'st-button',
-                  'data-variant': 'danger',
+                  'data-variant': 'outline',
+                  'data-destructive': 'true',
                   disabled: busy || entries.length === 0,
                   onClick: purgeAll,
                 },
