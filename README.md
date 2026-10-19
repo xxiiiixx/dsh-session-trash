@@ -20,6 +20,12 @@ Harness keeps every session log forever. `sessionPersistence` has no deletion AP
 
 A deletion **moves the session's directory** with a single `rename` into `$DSH_HOME/session-trash/<UTC stamp>-<session id>/` and writes a `manifest.json` beside it. Nothing is copied, so an interruption cannot leave a half-deleted session; a failed move leaves both directories exactly as they were.
 
+## Current limitations
+
+- **The client half is not rebuilt for a linked install.** This bundle ships plain JavaScript for both halves (no build step), so a directory install loads it as-is. Editing the installed bundle's files in place is picked up on the next page load; the Host half needs a plugin reload or a Harness restart.
+- Sessions are matched by their encoded id inside `$DSH_HOME/sessions/<project>/`, which is the shipped JSONL backend's layout. A different persistence backend would need its own locator.
+- Attachments referenced by a deleted log are not reclaimed, and projection-cache rows are left to self-heal; both are documented under *Scope*.
+
 ## Install
 
 The plugin is a normal Harness bundle. Install it like any other:
