@@ -352,6 +352,10 @@ window.__ModuleLoader__.load({
      * which is exactly how it looked wrong beside the shipped rows. Injecting on
      * activation covers every surface, and `ctx.effect` removes it on unload.
      *
+     * The mount point falls back to `body` for a run whose `<head>` is not
+     * reachable yet, because a missing stylesheet degrades every surface at once
+     * while a slightly late one only delays paint.
+     *
      * @param {object} ctx - the Client plugin context.
      */
     function installStyle(ctx) {
@@ -359,7 +363,9 @@ window.__ModuleLoader__.load({
         const element = document.createElement('style')
         element.dataset.dshSessionTrash = ''
         element.textContent = STYLE
-        document.head.append(element)
+        const host = document.head ?? document.body
+        if (host === null || host === undefined) return () => undefined
+        host.append(element)
         return () => element.remove()
       }, 'dsh-session-trash: stylesheet')
     }

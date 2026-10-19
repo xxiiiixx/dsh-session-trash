@@ -24,10 +24,11 @@ test('the stylesheet is injected on activation, not by a component', () => {
 
 test('the stylesheet is owned by an effect, so unload removes it', () => {
   const start = SOURCE.indexOf('function installStyle(ctx)')
-  const body = SOURCE.slice(start, start + 700)
+  const body = SOURCE.slice(start, start + 800)
   assert.match(body, /ctx\.effect\(/, 'installStyle must use ctx.effect')
   assert.match(body, /element\.remove\(\)/, 'the effect must remove the element')
-  assert.match(body, /document\.head\.append/, 'the element belongs in <head>')
+  assert.match(body, /host\.append\(element\)/, 'the element is appended to a live mount point')
+  assert.match(body, /document\.head \?\? document\.body/, 'head, with body as the fallback')
 })
 
 test('the menu row uses the host menu-item class names', () => {
