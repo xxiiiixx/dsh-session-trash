@@ -67,18 +67,93 @@ test('plan rejects a malformed id and a directory owned by another session', asy
   }
 })
 
-test('plan refuses a running session and a parent with children', async () => {
-  const { fixture, service } = await makeService({
-    rootInput: { sessions: [{ id: 'session-run' }, { id: 'session-parent' }] },
-    hostInput: { running: ['session-run'], children: { 'session-parent': ['session-child'] } },
+test('a parent with a stopped derived child is deletable and carries it', async () => {
+  // The reported failure: a session was refused merely because an old subagent
+  // session pointed at it. A stopped derived child now travels with its parent.
+  const { fixture, service, settings, fake } = await makeService({
+    rootInput: { sessions: [{ id: 'session-parent' }, { id: 'session-kid' }] },
+    hostInput: { children: { 'session-parent': ['session-kid'] } },
   })
   try {
-    const live = await service.plan('session-run')
-    assert.ok(live.blockers.includes('live'))
-    assert.equal(live.canDelete, false)
-    const parent = await service.plan('session-parent')
-    assert.ok(parent.blockers.includes('has-children'))
-    assert.equal(parent.canDelete, false)
+    const plan = await service.plan('session-parent')
+    assert.deepEqual(plan.blockers, [])
+    assert.equal(plan.canDelete, true)
+    assert.deepEqual(plan.carried, ['session-kid'])
+
+    const result = await service.trash('session-parent')
+    assert.equal(result.ok, true)
+    assert.equal(result.carried, 1)
+
+    // Both directories left the sessions root, into one entry.
+    for (const id of ['session-parent', 'session-kid']) {
+      const dir = join(fixture.root, projectKey('C:\\work\\demo'), encodeSegment(id))
+      await assert.rejects(() => lstat(dir), (error) => error.code === 'ENOENT')
+    }
+    const manifest = JSON.parse(await readFile(join(settings.trashRoot, result.trashId, 'manifest.json'), 'utf8'))
+    assert.equal(manifest.children.length, 1)
+    assert.equal(manifest.children[0].sessionId, 'session-kid')
+
+    // Restoring brings both back.
+    await service.restore(result.trashId)
+    for (const id of ['session-parent', 'session-kid']) {
+      const dir = join(fixture.root, projectKey('C:\\work\\demo'), encodeSegment(id))
+      assert.ok((await lstat(dir)).isDirectory(), `${id} must be restored`)
+    }
+    assert.ok(fake.removed.some(([, id]) => id === 'session-kid'))
+  } finally {
+    await fixture.dispose()
+  }
+})
+
+test('a fork stays behind and does not block its origin', async () => {
+  const { fixture, service } = await makeService({
+    rootInput: { sessions: [{ id: 'session-origin' }, { id: 'session-fork' }] },
+    hostInput: { children: { 'session-origin': { forks: ['session-fork'] } } },
+  })
+  try {
+    const plan = await service.plan('session-origin')
+    assert.deepEqual(plan.blockers, [])
+    assert.deepEqual(plan.carried, [])
+    await service.trash('session-origin')
+    // The fork is an independent session and must still be there.
+    const forkDir = join(fixture.root, projectKey('C:\\work\\demo'), encodeSegment('session-fork'))
+    assert.ok((await lstat(forkDir)).isDirectory())
+  } finally {
+    await fixture.dispose()
+  }
+})
+
+test('a running derived child blocks the parent and is named', async () => {
+  const { fixture, service } = await makeService({
+    rootInput: { sessions: [{ id: 'session-parent' }, { id: 'session-kid' }] },
+    hostInput: { running: ['session-kid'], children: { 'session-parent': ['session-kid'] } },
+  })
+  try {
+    const plan = await service.plan('session-parent')
+    assert.ok(plan.blockers.includes('child-running'))
+    assert.equal(plan.canDelete, false)
+    await assert.rejects(() => service.trash('session-parent'), (error) => error.code === CODE.childRunning)
+    const dir = join(fixture.root, projectKey('C:\\work\\demo'), encodeSegment('session-parent'))
+    assert.ok((await lstat(dir)).isDirectory())
+  } finally {
+    await fixture.dispose()
+  }
+})
+
+test('a derived child with children of its own refuses the whole carry', async () => {
+  const { fixture, service } = await makeService({
+    rootInput: { sessions: [{ id: 'session-parent' }, { id: 'session-kid' }, { id: 'session-grandkid' }] },
+    hostInput: {
+      children: {
+        'session-parent': ['session-kid'],
+        'session-kid': ['session-grandkid'],
+      },
+    },
+  })
+  try {
+    const plan = await service.plan('session-parent')
+    assert.ok(plan.blockers.includes('has-children'))
+    assert.equal(plan.canDelete, false)
   } finally {
     await fixture.dispose()
   }
@@ -190,18 +265,15 @@ test('trash moves the directory, writes a manifest, and notifies the client', as
   }
 })
 
-test('trash refuses a running session and a parent, leaving the directory untouched', async () => {
+test('trash refuses a running session, leaving the directory untouched', async () => {
   const { fixture, service } = await makeService({
-    rootInput: { sessions: [{ id: 'session-run' }, { id: 'session-parent' }] },
-    hostInput: { running: ['session-run'], children: { 'session-parent': ['session-child'] } },
+    rootInput: { sessions: [{ id: 'session-run' }] },
+    hostInput: { running: ['session-run'] },
   })
   try {
     await assert.rejects(() => service.trash('session-run'), (error) => error.code === CODE.live)
-    await assert.rejects(() => service.trash('session-parent'), (error) => error.code === CODE.hasChildren)
-    for (const id of ['session-run', 'session-parent']) {
-      const dir = join(fixture.root, projectKey('C:\\work\\demo'), encodeSegment(id))
-      assert.ok((await lstat(dir)).isDirectory(), `${id} must still be on disk`)
-    }
+    const dir = join(fixture.root, projectKey('C:\\work\\demo'), encodeSegment('session-run'))
+    assert.ok((await lstat(dir)).isDirectory(), 'session-run must still be on disk')
   } finally {
     await fixture.dispose()
   }

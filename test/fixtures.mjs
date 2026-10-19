@@ -82,7 +82,11 @@ export async function makeRoot(input = {}) {
  * id is absent from the registry. `idleAgents` adds ids whose Agent is resident
  * but idle — the case that used to be refused and must now be deletable.
  *
- * @param {{ running?: string[], idleAgents?: string[], children?: Record<string, string[]> }} input
+ * `children` states lineage explicitly so the derived-vs-fork distinction is
+ * testable. The terse `{ parent: [child, ...] }` form means "derived subagent
+ * sessions"; `{ parent: { derived: [...], forks: [...] } }` states both.
+ *
+ * @param {{ running?: string[], idleAgents?: string[], children?: Record<string, string[] | { derived?: string[], forks?: string[] }> }} input
  * @returns {object} the fake host.
  */
 export function fakeHost(input = {}) {
@@ -91,11 +95,15 @@ export function fakeHost(input = {}) {
   const children = input.children ?? {}
   const removed = []
   const summaries = []
-  for (const [parent, kids] of Object.entries(children)) {
-    for (const kid of kids) summaries.push({ header: { id: kid, parentSession: parent } })
+  for (const [parent, spec] of Object.entries(children)) {
+    const derived = Array.isArray(spec) ? spec : (spec.derived ?? [])
+    const forks = Array.isArray(spec) ? [] : (spec.forks ?? [])
+    for (const kid of derived) summaries.push({ header: { id: kid, parentSession: parent, origin: 'subagent' } })
+    for (const kid of forks) summaries.push({ header: { id: kid, parentSession: parent, isSeeded: true } })
   }
   return {
     removed,
+    summaries,
     host: {
       agents: {
         get: (id) => (running.has(id) ? { id, status: 'running' } : idle.has(id) ? { id, status: 'idle' } : undefined),

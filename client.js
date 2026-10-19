@@ -39,15 +39,17 @@ window.__ModuleLoader__.load({
       'dialog.cancel': '取消',
       'dialog.busy': '正在移动…',
       'dialog.done': '已移入回收站。可在「设置 → 会话回收站」中还原。',
+      'dialog.carried': '将一并移入 {count} 个派生自该会话的子代理会话（分叉的会话会保留）。',
       'dialog.close': '关闭',
       'blocker.title': '暂时不能删除这个会话',
       'blocker.live': '这个会话正在运行。请先停止它或让它空闲后再试。',
-      'blocker.has-children': '这个会话还有子会话。请先处理子会话。',
+      'blocker.has-children': '这个会话的子代理会话本身还有子会话，无法整体搬运。',
       'blocker.not-found': '找不到这个会话的存储目录。',
       'blocker.foreign-session': '目录内容与会话身份不符，已拒绝操作。',
       'blocker.symlink': '会话目录是一个符号链接，已拒绝操作。',
       'blocker.outside-root': '路径不在会话根目录内，已拒绝操作。',
       'blocker.activity-unknown': '无法读取会话列表，因此无法确认是否还有正在运行的工作；请稍后再试。',
+      'blocker.child-running': '这个会话派生出的某个子代理仍在运行，请先停止它。',
       'trash.nav': '会话回收站',
       'trash.title': '会话回收站',
       'trash.desc': '在这里还原或永久清除已删除的会话。删除的会话会在回收站保留一段时间，超过保留期后由 Harness 在下次启动时自动清除。',
@@ -100,15 +102,17 @@ window.__ModuleLoader__.load({
       'dialog.cancel': 'Cancel',
       'dialog.busy': 'Moving…',
       'dialog.done': 'Moved to the trash. Restore it from Settings → Session Trash.',
+      'dialog.carried': 'Also moves {count} subagent session(s) derived from this one. Forked sessions stay.',
       'dialog.close': 'Close',
       'blocker.title': 'This session cannot be deleted right now',
       'blocker.live': 'The session is running. Stop it or let it go idle first.',
-      'blocker.has-children': 'The session still has child sessions. Handle them first.',
+      'blocker.has-children': 'A subagent session of this one has children of its own, so it cannot be carried as a unit.',
       'blocker.not-found': 'No storage directory was found for this session.',
       'blocker.foreign-session': 'The directory does not belong to this session; the operation was refused.',
       'blocker.symlink': 'The session directory is a symbolic link; the operation was refused.',
       'blocker.outside-root': 'The path is outside the sessions root; the operation was refused.',
       'blocker.activity-unknown': 'The session list could not be read, so running work cannot be ruled out. Try again in a moment.',
+      'blocker.child-running': 'A subagent session derived from this one is still running. Stop it first.',
       'trash.nav': 'Session Trash',
       'trash.title': 'Session Trash',
       'trash.desc': 'Restore or permanently purge deleted sessions. Deleted sessions stay in the trash for a while; past the retention window Harness removes them on its next start.',
@@ -339,30 +343,50 @@ window.__ModuleLoader__.load({
 .st-broken { color: var(--dsw-alias-state-warn-primary); font-size: 12px; }
 `
 
-    /** Render the stylesheet inside the component so it disappears on unmount. */
-    function Style() {
-      return h('style', { 'data-dsh-session-trash': '' }, STYLE)
+    /**
+     * Inject the plugin stylesheet once for the whole run.
+     *
+     * It used to be a `<style>` element rendered by the dialog and the settings
+     * page. That left the *menu row* unstyled until a dialog had mounted — it
+     * rendered as the browser's default button (grey background, default font),
+     * which is exactly how it looked wrong beside the shipped rows. Injecting on
+     * activation covers every surface, and `ctx.effect` removes it on unload.
+     *
+     * @param {object} ctx - the Client plugin context.
+     */
+    function installStyle(ctx) {
+      ctx.effect(() => {
+        const element = document.createElement('style')
+        element.dataset.dshSessionTrash = ''
+        element.textContent = STYLE
+        document.head.append(element)
+        return () => element.remove()
+      }, 'dsh-session-trash: stylesheet')
     }
 
-    /** Trash can glyph, drawn here so the plugin depends on no icon package. */
+    /**
+     * Trash can glyph, drawn here so the plugin depends on no icon package.
+     *
+     * The host's menu icons are 14px line icons inside a 14px cell; this one is
+     * sized by CSS (`.st-menuitem-icon svg { width/height: 14px }`) rather than
+     * by attributes, so it inherits the cell exactly like a host icon does.
+     */
     function TrashIcon() {
       return h(
         'svg',
         {
           viewBox: '0 0 16 16',
-          width: 16,
-          height: 16,
           'aria-hidden': true,
           fill: 'none',
           stroke: 'currentColor',
-          strokeWidth: 1.4,
+          strokeWidth: 1.2,
           strokeLinecap: 'round',
           strokeLinejoin: 'round',
         },
         h('path', { d: 'M2.5 4.5h11' }),
-        h('path', { d: 'M6 4.5V3a.5.5 0 0 1 .5-.5h3A.5.5 0 0 1 10 3v1.5' }),
-        h('path', { d: 'M4 4.5l.7 8.2a1 1 0 0 0 1 .8h4.6a1 1 0 0 0 1-.8L12 4.5' }),
-        h('path', { d: 'M6.5 7v4M9.5 7v4' }),
+        h('path', { d: 'M6 4.5V3.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 .75.75V4.5' }),
+        h('path', { d: 'M4.2 4.5l.62 8.1a1 1 0 0 0 1 .9h4.36a1 1 0 0 0 1-.9l.62-8.1' }),
+        h('path', { d: 'M6.6 7v4M9.4 7v4' }),
       )
     }
 
@@ -509,7 +533,6 @@ window.__ModuleLoader__.load({
       return h(
         React.Fragment,
         null,
-        h(Style),
         h(
           'div',
           {
@@ -548,6 +571,13 @@ window.__ModuleLoader__.load({
                         : `${formatBytes(plan.bytes)} · ${format(t('dialog.files'), { files: plan.files })}`,
                   ),
                 ),
+            plan !== null && Array.isArray(plan.carried) && plan.carried.length > 0
+              ? h(
+                  'div',
+                  { className: 'st-notice', 'data-tone': 'block' },
+                  format(t('dialog.carried'), { count: plan.carried.length }),
+                )
+              : null,
             plan === null && error === null && !done
               ? h('p', { role: 'status' }, t('dialog.loading'))
               : null,
@@ -730,7 +760,6 @@ window.__ModuleLoader__.load({
       return h(
         React.Fragment,
         null,
-        h(Style),
         h(
           'div',
           { className: 'st-section' },
@@ -822,6 +851,7 @@ window.__ModuleLoader__.load({
     return {
       inject: ['slots', 'locale'],
       apply(ctx) {
+        installStyle(ctx)
         ctx.effect(() => ctx.locale.register(NS, { zh: ZH, en: EN }), 'dsh-session-trash: dictionaries')
         const t = ctx.locale.bind(NS)
 
