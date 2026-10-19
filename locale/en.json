@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Session Trash",
+    "description": "Adds \"Move to trash\" to a session's sidebar menu and a Session Trash settings page that restores or permanently purges deleted sessions."
+  }
+}

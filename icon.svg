@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Session Trash">
+  <defs>
+    <linearGradient id="st-lid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a9ee0"/>
+      <stop offset="1" stop-color="#247bbf"/>
+    </linearGradient>
+  </defs>
+  <rect x="17" y="20" width="30" height="34" rx="4" fill="url(#st-lid)"/>
+  <rect x="12" y="12" width="40" height="7" rx="3.5" fill="#1f6aa5"/>
+  <rect x="26" y="7" width="12" height="5" rx="2.5" fill="#1f6aa5"/>
+  <rect x="25" y="28" width="4" height="18" rx="2" fill="#dceaf7"/>
+  <rect x="35" y="28" width="4" height="18" rx="2" fill="#dceaf7"/>
+</svg>

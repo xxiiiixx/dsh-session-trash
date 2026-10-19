@@ -1,0 +1,21 @@
+# dsh-session-trash bundle patch.
+#
+# Installing this package through Plugin Manager (or `dsh plugin add`) appends
+# the bundle to the profile's bundle stack, and this patch inserts the Host row
+# that serves the trash endpoint.
+#
+# The row is inserted with no config: the plugin resolves its own defaults from
+# the running DSH home at activation (`$DSH_HOME/sessions` and its sibling
+# `$DSH_HOME/session-trash`), so it works on any machine without a per-machine
+# patch, and a hand edit here is never needed just to install it. Every field
+# stays overridable from the profile's own patch layer:
+#
+#   - id: dsh-session-trash
+#     name: 'dsh-session-trash'
+#     config:
+#       trashRoot: 'D:/elsewhere/session-trash'
+#
+- insert:
+    - id: dsh-session-trash
+      name: 'dsh-session-trash'
+      config: {}
