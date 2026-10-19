@@ -1,7 +1,7 @@
 /** The destructive module's contract: refuse first, mutate atomically, never copy. */
 
 import assert from 'node:assert/strict'
-import { lstat, mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
+import { lstat, mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { zstdCompressSync } from 'node:zlib'
@@ -450,6 +450,100 @@ test('concurrent deletions are serialized', async () => {
     assert.equal(first.status, 'fulfilled')
     assert.equal(second.status, 'fulfilled')
     assert.equal((await service.list()).length, 2)
+  } finally {
+    await fixture.dispose()
+  }
+})
+
+test('a partial carry failure puts the parent back too', async () => {
+  // The parent moves first, then a child fails. Nothing may be left in the
+  // trash and the parent must be back where it started.
+  const { fixture, service, settings, fake } = await makeService({
+    rootInput: { sessions: [{ id: 'session-parent' }, { id: 'session-kid' }] },
+    hostInput: { children: { 'session-parent': ['session-kid'] } },
+  })
+  try {
+    let calls = 0
+    const flaky = createTrashService({
+      settings,
+      host: fake.host,
+      emit: () => undefined,
+      renameImpl: async (from, to) => {
+        calls += 1
+        if (calls === 2) {
+          const error = new Error('child move refused')
+          error.code = 'EBUSY'
+          throw error
+        }
+        return rename(from, to)
+      },
+    })
+
+    await assert.rejects(() => flaky.trash('session-parent'), (error) => error.code === CODE.busy)
+
+    for (const id of ['session-parent', 'session-kid']) {
+      const dir = join(fixture.root, projectKey('C:\\work\\demo'), encodeSegment(id))
+      assert.ok((await lstat(dir)).isDirectory(), `${id} must be back on disk`)
+    }
+    assert.deepEqual(await readdir(settings.trashRoot).catch(() => []), [], 'no half-made entry')
+  } finally {
+    await fixture.dispose()
+  }
+})
+
+test('restore refuses when a child target is occupied and keeps the entry', async () => {
+  const { fixture, service, settings } = await makeService({
+    rootInput: { sessions: [{ id: 'session-parent' }, { id: 'session-kid' }] },
+    hostInput: { children: { 'session-parent': ['session-kid'] } },
+  })
+  try {
+    const { trashId } = await service.trash('session-parent')
+    // Occupy the child's old location.
+    const kidDir = join(fixture.root, projectKey('C:\\work\\demo'), encodeSegment('session-kid'))
+    await mkdir(kidDir, { recursive: true })
+
+    await assert.rejects(() => service.restore(trashId), (error) => error.code === CODE.alreadyExists)
+    // The entry survives intact, children included.
+    const listed = await service.list()
+    assert.equal(listed.length, 1)
+    assert.equal(listed[0].children, 1)
+    assert.ok((await lstat(join(settings.trashRoot, trashId, 'sessions', encodeSegment('session-kid')))).isDirectory())
+  } finally {
+    await fixture.dispose()
+  }
+})
+
+test('list reports how many subagent sessions an entry carries', async () => {
+  const { fixture, service } = await makeService({
+    rootInput: { sessions: [{ id: 'session-parent' }, { id: 'k1' }, { id: 'k2' }] },
+    hostInput: { children: { 'session-parent': ['k1', 'k2'] } },
+  })
+  try {
+    await service.trash('session-parent')
+    const listed = await service.list()
+    assert.equal(listed.length, 1)
+    assert.equal(listed[0].children, 2)
+  } finally {
+    await fixture.dispose()
+  }
+})
+
+test('a carried child with a hostile manifest is refused on restore', async () => {
+  const { fixture, service, settings } = await makeService({
+    rootInput: { sessions: [{ id: 'session-parent' }, { id: 'session-kid' }] },
+    hostInput: { children: { 'session-parent': ['session-kid'] } },
+  })
+  try {
+    const { trashId } = await service.trash('session-parent')
+    const manifestPath = join(settings.trashRoot, trashId, 'manifest.json')
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8'))
+    manifest.children[0].projectDirName = '../../escape'
+    await writeFile(manifestPath, JSON.stringify(manifest), 'utf8')
+
+    await assert.rejects(() => service.restore(trashId), (error) => error.code === CODE.corrupt)
+    // Nothing escaped the root.
+    const outside = join(settings.sessionsRoot, '..', 'escape')
+    await assert.rejects(() => lstat(outside), (error) => error.code === 'ENOENT')
   } finally {
     await fixture.dispose()
   }
