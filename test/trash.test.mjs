@@ -122,6 +122,42 @@ test('an Agent surface without a status is treated as running', async () => {
   }
 })
 
+test('an unreadable session list refuses the delete but does not claim children', async () => {
+  const { fixture, service } = await makeService({ rootInput: { sessions: [{ id: 'session-a' }] } })
+  try {
+    const blind = createTrashService({
+      settings: service.settings,
+      host: {
+        agents: { get: () => undefined },
+        sessionPersistence: {
+          list: async () => {
+            throw new Error('backend unavailable')
+          },
+        },
+        sessionQuery: { readTitle: async () => ({ title: 't' }) },
+      },
+      emit: () => undefined,
+    })
+
+    // The verdict is still a refusal — permission to remove a parent must never
+    // be inferred from an unanswerable question — but the reason is honest.
+    const plan = await blind.plan('session-a')
+    assert.deepEqual(plan.blockers, ['activity-unknown'])
+    assert.equal(plan.canDelete, false)
+    assert.ok(!plan.blockers.includes('has-children'))
+
+    await assert.rejects(
+      () => blind.trash('session-a'),
+      (error) => error.code === CODE.unavailable,
+    )
+    // Nothing was moved.
+    const dir = join(fixture.root, projectKey('C:\\work\\demo'), encodeSegment('session-a'))
+    assert.ok((await lstat(dir)).isDirectory())
+  } finally {
+    await fixture.dispose()
+  }
+})
+
 test('trash moves the directory, writes a manifest, and notifies the client', async () => {
   const { fixture, fake, service, settings } = await makeService({
     rootInput: { sessions: [{ id: 'session-a' }] },
