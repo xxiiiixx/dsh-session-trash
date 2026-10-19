@@ -77,11 +77,17 @@ export async function makeRoot(input = {}) {
 
 /**
  * Minimal fake host services for the trash service.
- * @param {{ live?: string[], children?: Record<string, string[]> }} input
+ *
+ * `running` sessions report `status: 'running'` (a turn in flight); every other
+ * id is absent from the registry. `idleAgents` adds ids whose Agent is resident
+ * but idle — the case that used to be refused and must now be deletable.
+ *
+ * @param {{ running?: string[], idleAgents?: string[], children?: Record<string, string[]> }} input
  * @returns {object} the fake host.
  */
 export function fakeHost(input = {}) {
-  const live = new Set(input.live ?? [])
+  const running = new Set(input.running ?? [])
+  const idle = new Set(input.idleAgents ?? [])
   const children = input.children ?? {}
   const removed = []
   const summaries = []
@@ -91,7 +97,9 @@ export function fakeHost(input = {}) {
   return {
     removed,
     host: {
-      agents: { get: (id) => (live.has(id) ? { id } : undefined) },
+      agents: {
+        get: (id) => (running.has(id) ? { id, status: 'running' } : idle.has(id) ? { id, status: 'idle' } : undefined),
+      },
       sessions: { get: () => undefined },
       sessionPersistence: { list: async () => summaries },
       sessionQuery: {

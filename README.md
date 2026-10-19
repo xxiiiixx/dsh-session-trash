@@ -14,7 +14,7 @@ Harness keeps every session log forever. `sessionPersistence` has no deletion AP
 
 | Where | What |
 |---|---|
-| Session row → `…` menu | **Move to trash**, with a confirmation dialog showing the title, original path and size |
+| Session row → `…` menu | **Move to trash**, styled to match the shipped menu rows (same geometry, icon cell and label rhythm) with the danger colour the host uses for destructive rows |
 | Settings → **Session Trash** | List of deleted sessions with **Restore** and **Purge**; **Empty trash** |
 | Host startup | Deletes entries older than `retentionDays` (default 30), silently |
 
@@ -65,7 +65,7 @@ Deleting a session is destructive, so the implementation spends most of its code
 2. **No path crosses the wire.** The client sends `{ op, sessionId }` or `{ op, trashId }`. The Host resolves identifiers against its own roots; there is no `path` field to smuggle.
 3. **Identifiers are whitelisted** (`^[A-Za-z0-9._-]+$`, ≤ 200 chars, never `.`/`..`) and every resolved path is checked with `path.relative` after `realpath`, so a symlink or a crafted id cannot escape a root.
 4. **Directories prove their identity.** Before moving anything the plugin reads the log's header line and refuses unless `header.id` matches the requested session.
-5. **Running sessions and parents are refused.** A live Agent (or a session with child sessions) yields a stable `live` / `has-children` code and the directory is untouched.
+5. **Only a running turn blocks a delete.** Liveness is read exactly the way the shipped archive action reads it: the session's Agent counts as busy only while its `status` is `running` (a turn in flight, including one waiting for an approval). An idle Agent that merely stays resident in the registry does **not** block — a session you already stopped is deletable. A session with child sessions yields `has-children` and its directory is untouched. An Agent surface that cannot report a status is treated as running, so the plugin never guesses its way into moving a log that may still be written.
 6. **`rename` only, never copy-then-delete.** `EXDEV`, `EPERM`, `EBUSY` are reported as `cross-volume` / `busy`; no fallback exists that could leave a duplicate or a partial copy.
 7. **Serialized mutations.** One promise chain per service, plus a re-run of every preflight immediately before the move, which closes the window between the dialog and the action.
 8. **No agent tool.** The Host half registers no tool at all. Only a person clicking the UI can delete a session; the model cannot.

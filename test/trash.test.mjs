@@ -67,18 +67,56 @@ test('plan rejects a malformed id and a directory owned by another session', asy
   }
 })
 
-test('plan reports blockers for a live session and for a parent with children', async () => {
+test('plan refuses a running session and a parent with children', async () => {
   const { fixture, service } = await makeService({
-    rootInput: { sessions: [{ id: 'session-live' }, { id: 'session-parent' }] },
-    hostInput: { live: ['session-live'], children: { 'session-parent': ['session-child'] } },
+    rootInput: { sessions: [{ id: 'session-run' }, { id: 'session-parent' }] },
+    hostInput: { running: ['session-run'], children: { 'session-parent': ['session-child'] } },
   })
   try {
-    const live = await service.plan('session-live')
+    const live = await service.plan('session-run')
     assert.ok(live.blockers.includes('live'))
     assert.equal(live.canDelete, false)
     const parent = await service.plan('session-parent')
     assert.ok(parent.blockers.includes('has-children'))
     assert.equal(parent.canDelete, false)
+  } finally {
+    await fixture.dispose()
+  }
+})
+
+test('plan allows an idle Agent that merely stays resident', async () => {
+  // The reported failure: an already-stopped session was refused because its
+  // Agent object still existed. Only `status === 'running'` may block a delete.
+  const { fixture, service } = await makeService({
+    rootInput: { sessions: [{ id: 'session-idle' }] },
+    hostInput: { idleAgents: ['session-idle'] },
+  })
+  try {
+    const plan = await service.plan('session-idle')
+    assert.deepEqual(plan.blockers, [])
+    assert.equal(plan.canDelete, true)
+    const result = await service.trash('session-idle')
+    assert.equal(result.ok, true)
+  } finally {
+    await fixture.dispose()
+  }
+})
+
+test('an Agent surface without a status is treated as running', async () => {
+  const { fixture, service } = await makeService({ rootInput: { sessions: [{ id: 'session-a' }] } })
+  try {
+    // An opaque Agent cannot be proven idle, so the plugin refuses rather than
+    // guessing its way into moving a log that may still be written.
+    const opaque = createTrashService({
+      settings: service.settings,
+      host: {
+        agents: { get: () => ({ id: 'session-a' }) },
+        sessionPersistence: { list: async () => [] },
+        sessionQuery: { readTitle: async () => ({ title: 't' }) },
+      },
+      emit: () => undefined,
+    })
+    await assert.rejects(() => opaque.trash('session-a'), (error) => error.code === CODE.live)
   } finally {
     await fixture.dispose()
   }
@@ -116,15 +154,15 @@ test('trash moves the directory, writes a manifest, and notifies the client', as
   }
 })
 
-test('trash refuses a live session and a parent, leaving the directory untouched', async () => {
+test('trash refuses a running session and a parent, leaving the directory untouched', async () => {
   const { fixture, service } = await makeService({
-    rootInput: { sessions: [{ id: 'session-live' }, { id: 'session-parent' }] },
-    hostInput: { live: ['session-live'], children: { 'session-parent': ['session-child'] } },
+    rootInput: { sessions: [{ id: 'session-run' }, { id: 'session-parent' }] },
+    hostInput: { running: ['session-run'], children: { 'session-parent': ['session-child'] } },
   })
   try {
-    await assert.rejects(() => service.trash('session-live'), (error) => error.code === CODE.live)
+    await assert.rejects(() => service.trash('session-run'), (error) => error.code === CODE.live)
     await assert.rejects(() => service.trash('session-parent'), (error) => error.code === CODE.hasChildren)
-    for (const id of ['session-live', 'session-parent']) {
+    for (const id of ['session-run', 'session-parent']) {
       const dir = join(fixture.root, projectKey('C:\\work\\demo'), encodeSegment(id))
       assert.ok((await lstat(dir)).isDirectory(), `${id} must still be on disk`)
     }

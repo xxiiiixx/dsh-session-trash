@@ -276,12 +276,38 @@ window.__ModuleLoader__.load({
       return listInflight
     }
 
+    /**
+     * Stylesheet.
+     *
+     * The `.st-menuitem*` and `.st-button*` rules are copied from the host's own
+     * primitives (`MenuItemButton` in `ui-primitives`, `Button` in the shell) so
+     * this plugin's rows sit pixel-for-pixel beside the shipped ones. Only the
+     * class prefix and the token names are kept as-is: those tokens are the
+     * contract, and a renamed token degrades appearance rather than breaking the
+     * page. Attribution: derived from DeepSeek Harness (MIT).
+     */
     const STYLE = `
-.st-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 12px; border: 0; border-radius: 8px; background: transparent; color: var(--dsw-alias-label-primary); font: inherit; text-align: left; cursor: pointer; }
-.st-row:hover { background: var(--dsw-alias-bg-layer-2); }
-.st-row:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
-.st-row[aria-disabled="true"] { opacity: .5; cursor: default; }
-.st-row-icon { display: inline-flex; width: 16px; height: 16px; flex: none; }
+.st-menuitem-wrap { position: relative; }
+.st-menuitem { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 34px; padding: 6px 8px; border: none; border-radius: var(--dsw-radius-md); background: transparent; cursor: pointer; font-size: 13px; line-height: 20px; color: var(--dsw-alias-label-primary); text-align: left; }
+.st-menuitem:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); }
+.st-menuitem:focus-visible:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); outline: none; }
+.st-menuitem:disabled { opacity: .4; cursor: not-allowed; }
+.st-menuitem-icon { display: inline-flex; flex: none; width: 14px; height: 14px; align-items: center; justify-content: center; color: var(--dsw-alias-menu-icon); }
+.st-menuitem-icon svg { width: 14px; height: 14px; }
+.st-menuitem-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-menuitem[data-danger="true"], .st-menuitem[data-danger="true"] .st-menuitem-icon { color: var(--dsw-alias-state-error-primary); }
+.st-menuitem[data-danger="true"]:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover-danger); }
+.st-menuitem[data-danger="true"]:focus-visible:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover-danger); outline: none; }
+
+.st-button { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 4px; height: 36px; padding: 0 14px; border: none; border-radius: var(--dsw-radius-md); cursor: pointer; font-size: 14px; line-height: 22px; color: var(--dsw-alias-label-primary); background: transparent; }
+.st-button:disabled { cursor: not-allowed; opacity: .4; }
+.st-button[data-variant="outline"] { border: .5px solid var(--dsw-alias-border-l3); background: transparent; }
+.st-button[data-variant="outline"]:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); }
+.st-button[data-variant="primary"] { background: var(--dsw-alias-button-primary-fill); color: var(--dsw-alias-label-primary-foreground); }
+.st-button[data-variant="primary"]:hover:not(:disabled) { background: var(--dsw-alias-button-primary-hover); }
+.st-button[data-variant="danger"] { border: .5px solid var(--dsw-alias-state-error-primary); color: var(--dsw-alias-state-error-primary); background: transparent; }
+.st-button[data-variant="danger"]:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover-danger); }
+
 .st-backdrop { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; background: color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent); backdrop-filter: blur(2px); pointer-events: auto; z-index: 60; }
 .st-dialog { width: min(520px, 100%); max-height: min(640px, 100%); display: flex; flex-direction: column; gap: 14px; padding: 20px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 14px; background: var(--dsw-alias-bg-overlay); box-shadow: 0 18px 48px rgba(0,0,0,.28); overflow: auto; }
 .st-dialog h2 { margin: 0; font-size: 16px; font-weight: 600; color: var(--dsw-alias-label-primary); }
@@ -294,13 +320,6 @@ window.__ModuleLoader__.load({
 .st-notice[data-tone="error"] { border-color: var(--dsw-alias-state-error-primary); color: var(--dsw-alias-label-primary); background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 10%, transparent); }
 .st-notice[data-tone="done"] { border-color: var(--dsw-alias-state-success-primary); color: var(--dsw-alias-label-primary); background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 10%, transparent); }
 .st-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 2px; }
-.st-button { padding: 7px 14px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); font: inherit; font-size: 13px; cursor: pointer; }
-.st-button:hover:not(:disabled) { background: var(--dsw-alias-bg-layer-2); }
-.st-button:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
-.st-button:disabled { opacity: .5; cursor: default; }
-.st-button[data-variant="primary"] { background: var(--dsw-alias-brand-primary); border-color: var(--dsw-alias-brand-primary); color: #fff; }
-.st-button[data-variant="danger"] { border-color: var(--dsw-alias-state-error-primary); color: var(--dsw-alias-state-error-primary); }
-.st-button[data-variant="danger"]:hover:not(:disabled) { background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 12%, transparent); }
 .st-section { display: flex; flex-direction: column; gap: 14px; }
 .st-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .st-header h2 { margin: 0 0 4px; font-size: 15px; font-weight: 600; color: var(--dsw-alias-label-primary); }
@@ -344,26 +363,35 @@ window.__ModuleLoader__.load({
       )
     }
 
-    /** The sidebar menu row. */
+    /**
+     * The sidebar menu row, shaped exactly like the host's `MenuItemButton`
+     * (icon cell, flexible label, `role="menuitem"`, danger colouring) so it
+     * reads as one of the shipped rows rather than a guest control.
+     */
     function TrashMenuButton(props) {
       const { sessionId, displayTitle, t } = props
       const closeMenu = useMenuCloser(props)
       return h(
-        'button',
-        {
-          type: 'button',
-          role: 'menuitem',
-          className: 'st-row',
-          'aria-label': t('menu.aria'),
-          onClick: (event) => {
-            event.preventDefault()
-            event.stopPropagation()
-            closeMenu()
-            requestStore.set({ sessionId, displayTitle, stage: 'plan' })
+        'div',
+        { className: 'st-menuitem-wrap' },
+        h(
+          'button',
+          {
+            type: 'button',
+            role: 'menuitem',
+            className: 'st-menuitem',
+            'data-danger': 'true',
+            'aria-label': t('menu.aria'),
+            onClick: (event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              closeMenu()
+              requestStore.set({ sessionId, displayTitle, stage: 'plan' })
+            },
           },
-        },
-        h('span', { className: 'st-row-icon' }, h(TrashIcon)),
-        h('span', null, t('menu.title')),
+          h('span', { className: 'st-menuitem-icon' }, h(TrashIcon)),
+          h('span', { className: 'st-menuitem-label' }, t('menu.title')),
+        ),
       )
     }
 
@@ -541,17 +569,31 @@ window.__ModuleLoader__.load({
               'div',
               { className: 'st-actions' },
               done
-                ? h('button', { type: 'button', className: 'st-button', onClick: close }, t('dialog.close'))
+                ? h(
+                    'button',
+                    { type: 'button', className: 'st-button', 'data-variant': 'outline', onClick: close },
+                    t('dialog.close'),
+                  )
                 : h(
                     React.Fragment,
                     null,
-                    h('button', { type: 'button', className: 'st-button', onClick: close, disabled: busy }, t('dialog.cancel')),
                     h(
                       'button',
                       {
                         type: 'button',
                         className: 'st-button',
-                        'data-variant': 'primary',
+                        'data-variant': 'outline',
+                        onClick: close,
+                        disabled: busy,
+                      },
+                      t('dialog.cancel'),
+                    ),
+                    h(
+                      'button',
+                      {
+                        type: 'button',
+                        className: 'st-button',
+                        'data-variant': 'danger',
                         disabled: !canDelete,
                         onClick: confirm,
                         ref: confirmRef,
@@ -626,6 +668,7 @@ window.__ModuleLoader__.load({
                 {
                   type: 'button',
                   className: 'st-button',
+                  'data-variant': 'outline',
                   disabled: busy !== null,
                   onClick: restore,
                 },
@@ -694,7 +737,8 @@ window.__ModuleLoader__.load({
               null,
               h('h2', null, t('trash.title')),
               h('p', null, t('trash.desc')),
-            ),            h(
+            ),
+            h(
               'div',
               { className: 'st-actions-cell' },
               h(
@@ -702,6 +746,7 @@ window.__ModuleLoader__.load({
                 {
                   type: 'button',
                   className: 'st-button',
+                  'data-variant': 'outline',
                   onClick: () => refreshTrash(t),
                   disabled: state.status === 'loading',
                 },
