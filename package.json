@@ -3,30 +3,44 @@
   "version": "0.1.0",
   "private": false,
   "type": "module",
-  "description": "Session trash for DeepSeek Harness Desktop: move a session into a recoverable trash from the sidebar, restore or purge it from a settings page.",
-  "license": "MIT",
+  "description": "Session trash for DeepSeek Harness Desktop: move a session into a recoverable trash from the sidebar menu, then restore or permanently purge it from a settings page.",
+  "icon": "./icon.svg",
   "keywords": [
     "deepseek-harness",
     "dsh",
     "dsh-plugin",
-    "session"
+    "session",
+    "trash",
+    "recycle-bin"
   ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xxiiiixx/dsh-session-trash.git"
+  },
+  "homepage": "https://github.com/xxiiiixx/dsh-session-trash#readme",
+  "bugs": {
+    "url": "https://github.com/xxiiiixx/dsh-session-trash/issues"
+  },
+  "main": "index.js",
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
     "./locale/*.json": "./locale/*.json",
-    "./icon": "./icon.svg"
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
   },
   "files": [
     "index.js",
-    "lib/*.js",
+    "lib",
     "client.js",
     "cordis.patch.yml",
-    "locale/*.json",
+    "locale",
     "icon.svg",
     "README.md",
     "README.zh.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "engines": {
     "node": ">=20"
@@ -46,6 +60,10 @@
     }
   },
   "scripts": {
-    "test": "node --test test/"
+    "test": "node --test --experimental-test-isolation=none \"test/*.test.mjs\"",
+    "audit": "node scripts/audit.mjs",
+    "e2e": "node scripts/e2e.mjs",
+    "check:css": "node scripts/compare-native-css.mjs",
+    "check:liveness": "node scripts/compare-liveness.mjs"
   }
 }
