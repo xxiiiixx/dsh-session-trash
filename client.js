@@ -367,17 +367,22 @@ window.__ModuleLoader__.load({
       )
     }
 
+    /** A stand-in hook used only when a slot variant omits `useMenuOpenState`. */
+    const NO_MENU_STATE = () => [false, undefined]
+
     /**
-     * Close the host menu through the slot's own hook when it is offered.
-     * The hook is called unconditionally because it is a store hook: skipping it
-     * on a slot variant that omits `useMenuOpenState` would break hook order.
+     * Close the host menu through the slot's own hook.
+     *
+     * The hook identity is fixed for as long as the entry is mounted, so React's
+     * hook order stays stable; the fallback lets a slot variant that omits the
+     * hook degrade to "the menu closes itself" instead of crashing the row.
      *
      * @param {object} props - component props.
      * @returns {() => void} the close action.
      */
     function useMenuCloser(props) {
-      const useMenuOpenState = props.useMenuOpenState
-      const pair = typeof useMenuOpenState === 'function' ? useMenuOpenState() : undefined
+      const hook = typeof props.useMenuOpenState === 'function' ? props.useMenuOpenState : NO_MENU_STATE
+      const pair = hook()
       const setter = Array.isArray(pair) ? pair[1] : undefined
       return useCallback(() => {
         if (typeof setter === 'function') setter(false)
