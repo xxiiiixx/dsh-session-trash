@@ -59,6 +59,28 @@ Plugins → Add, or the `plugin_manager` tool with `install_bundle`). The row it
 inserts is named `dsh-session-trash`, and it is enabled immediately. Restart
 Harness if Plugin Manager reports `restart-required`.
 
+### Updating an installed copy
+
+A GitHub install copies the package into the profile's `node_modules`; it does
+**not** link back to a checkout. Editing a checkout therefore changes nothing
+until the change is pushed and the installed copy is replaced.
+
+```bash
+cd <path-to-your-checkout>
+git add -A && git commit -m "..." && git push
+```
+
+Then tell Plugin Manager to reinstall the bundle (`remove_bundle` followed by
+`install_bundle` with `github:xxiiiixx/dsh-session-trash`, or the same two steps
+in Settings → Plugins). Reinstalling a package requires a Harness restart to
+load the fresh JavaScript generation for the Host half; the Client half is
+picked up on the next page load.
+
+If you would rather have a checkout's edits take effect immediately, install it
+by directory path instead — that produces a junction into the profile, and a
+moved or renamed checkout then breaks the plugin, because the link points at the
+old location.
+
 <a id="configuration"></a>
 ## Configuration
 

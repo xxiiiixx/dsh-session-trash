@@ -53,6 +53,24 @@ dsh plugin --profile desktop add github:xxiiiixx/dsh-session-trash
 的 `install_bundle`）。插入的 Loader 行名为 `dsh-session-trash`，安装后立即启用。
 如果 Plugin Manager 返回 `restart-required`，请重启 Harness。
 
+### 更新已安装的版本
+
+从 GitHub 安装是**把包复制**进 profile 的 `node_modules`，**不会**链接回源码目录。
+所以只改维护目录里的代码不会生效，必须先推送、再替换已安装的副本。
+
+```bash
+cd <你的维护目录>
+git add -A && git commit -m "..." && git push
+```
+
+然后让 Plugin Manager 重装这个 bundle（`remove_bundle` 之后 `install_bundle`
+指向 `github:xxiiiixx/dsh-session-trash`，或在「设置 → 插件」里做同样两步）。
+重装软件包后需要重启 Harness 才能加载新的 Host 端 JavaScript 代次；Client 端刷新
+页面即可。
+
+如果你更希望改完立刻生效，就用**目录路径**安装——那会在 profile 里生成一个
+junction 链接，此后一旦移动或重命名该目录，插件就会失效，因为链接仍指向旧位置。
+
 <a id="配置"></a>
 ## 配置
 
