@@ -14,7 +14,7 @@ Harness keeps every session log forever. `sessionPersistence` has no deletion AP
 
 | Where | What |
 |---|---|
-| Session row → `…` menu | **Move to trash**, styled to match the shipped menu rows (same geometry, icon cell and label rhythm) with the danger colour the host uses for destructive rows |
+| Session row → `…` menu | **Move to trash**, using the host's own `MenuItemButton` geometry (same height, padding, icon cell and label rhythm) with its danger colouring; the dialog's destructive confirm is the host's outline-with-red-text pattern, and its cancel is outline |
 | Settings → **Session Trash** | List of deleted sessions with **Restore** and **Purge**; **Empty trash** |
 | Host startup | Deletes entries older than `retentionDays` (default 30), silently |
 
